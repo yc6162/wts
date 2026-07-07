@@ -1,8 +1,10 @@
-"use client";
+import { Suspense } from "react";
+import { MobileWtsApp } from "@/domains/trading/components/MobileWtsApp";
 
-import { MobileWtsApp } from "@/components/MobileWtsApp";
-
-// 첫 화면은 모바일 WTS 실제 사용 화면을 바로 노출한다.
 export default function Home() {
-  return <MobileWtsApp />;
+  return (
+    <Suspense fallback={null}>
+      <MobileWtsApp />
+    </Suspense>
+  );
 }

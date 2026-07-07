@@ -7,7 +7,7 @@ import { formatNumber, getChangeClass } from "@/lib/format";
 import { useMarketStore } from "@/store/market-store";
 import type { OrderBook } from "@/types/trading";
 
-// 호가 탭은 TR 조회 후 orderbook 실시간 패킷으로 잔량을 갱신한다.
+// 호가 탭은 TR 호가판 위에 orderbook 실시간 패킷을 덮어쓴다.
 export function OrderBookPanel() {
   const { activeCode } = useMarketStore();
   const orderBookQuery = useOrderBookQuery(activeCode);

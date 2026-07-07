@@ -5,14 +5,14 @@ import { AuthProvider, useAuthStore } from "@/store/auth-store";
 import { MarketProvider, useMarketStore } from "@/store/market-store";
 import { realtimeClient } from "@/lib/realtime";
 import { QueryProvider } from "@/components/QueryProvider";
-import { ChartPanel } from "@/components/panels/ChartPanel";
-import { CurrentPanel } from "@/components/panels/CurrentPanel";
-import { DailyPanel } from "@/components/panels/DailyPanel";
-import { OrderBookPanel } from "@/components/panels/OrderBookPanel";
-import { SymbolSearch } from "@/components/SymbolSearch";
-import { TabBar } from "@/components/TabBar";
+import { ChartPanel } from "@/domains/chart/components/ChartPanel";
+import { CurrentPanel } from "@/domains/current/components/CurrentPanel";
+import { DailyPanel } from "@/domains/daily/components/DailyPanel";
+import { OrderBookPanel } from "@/domains/orderbook/components/OrderBookPanel";
+import { SymbolSearch } from "@/domains/market/components/SymbolSearch";
+import { TabBar } from "@/domains/trading/components/TabBar";
 
-// Provider를 한 곳에 모아 화면 컴포넌트가 로직에만 집중하게 한다.
+// 앱에 필요한 공통 Provider를 한 곳에서 조립한다.
 export function MobileWtsApp() {
   return (
     <QueryProvider>
@@ -25,7 +25,7 @@ export function MobileWtsApp() {
   );
 }
 
-// 공통 실시간 연결을 앱 시작 시 미리 열어두는 셸이다.
+// 실시간 연결은 화면보다 상위에서 한 번 열고, 탭별 구독만 하위에서 관리한다.
 function RealtimeShell() {
   const { user } = useAuthStore();
   const { activeTab } = useMarketStore();

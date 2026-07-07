@@ -7,7 +7,7 @@ import { formatNumber, formatRate, getChangeClass } from "@/lib/format";
 import { useMarketStore } from "@/store/market-store";
 import type { DailyPrice, QuoteSnapshot } from "@/types/trading";
 
-// 일자별 탭은 TR 데이터 중심이며 탭 이동 시 별도 실시간 구독은 하지 않는다.
+// 일자별 탭은 TR 일봉 목록을 기준으로 최신 행만 실시간 현재가로 보정한다.
 export function DailyPanel() {
   const { activeCode } = useMarketStore();
   const dailyQuery = useDailyPricesQuery(activeCode);

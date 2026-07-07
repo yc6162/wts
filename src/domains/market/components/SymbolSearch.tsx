@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useMarketStore } from "@/store/market-store";
 
-// MasterCode 목록을 이용해 종목을 선택하는 검색 컴포넌트다.
+// MasterCode 목록에서 종목을 찾고 현재 기준 종목을 변경한다.
 export function SymbolSearch() {
   const { activeCode, selectedSymbol, symbols, setActiveCode } = useMarketStore();
   const [keyword, setKeyword] = useState("");
@@ -14,7 +14,7 @@ export function SymbolSearch() {
     return symbols.filter((item) => `${item.code} ${item.name}`.toLowerCase().includes(text)).slice(0, 5);
   }, [keyword, symbols]);
 
-  // 입력한 코드나 종목명으로 첫 번째 매칭 종목을 적용한다.
+  // 입력값과 가장 가까운 종목을 찾고, 없으면 숫자 코드를 그대로 적용한다.
   function submitSymbol() {
     const text = keyword.trim();
     if (!text) return;

@@ -8,7 +8,7 @@ import { useMarketStore } from "@/store/market-store";
 import { StatTile } from "@/components/StatTile";
 import type { QuoteSnapshot } from "@/types/trading";
 
-// 현재가 탭은 TR 조회 후 quote 실시간을 덮어쓴다.
+// 현재가 탭은 TR 스냅샷 위에 quote 실시간 값을 덮어쓴다.
 export function CurrentPanel() {
   const { activeCode } = useMarketStore();
   const quoteQuery = useQuoteQuery(activeCode);

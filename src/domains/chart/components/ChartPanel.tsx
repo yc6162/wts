@@ -126,7 +126,7 @@ export function ChartPanel() {
   );
 }
 
-// 실시간 현재가를 마지막 봉 종가에 반영한다.
+// 실시간 현재가를 마지막 차트 봉에 반영한다.
 function updateLastPoint(points: ChartPoint[], price: number) {
   if (!points.length || !price) return points;
   const next = [...points];
