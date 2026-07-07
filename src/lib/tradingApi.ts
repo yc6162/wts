@@ -3,7 +3,7 @@ import { normalizeMasterCodes } from "@/lib/masterCode";
 import type { ChartPoint, DailyPrice, LoginUser, MarketSymbol, OrderBook, QuoteSnapshot, TrResult } from "@/types/trading";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_TR_API_URL ?? "";
-const MASTER_CODE_URL = process.env.NEXT_PUBLIC_MASTER_CODE_URL ?? "/api/master-code";
+const MASTER_CODE_URL = "/api/master-code";
 
 // API 서버 응답이 없을 때도 화면을 살리기 위한 공통 TR 래퍼다.
 async function requestTr<T>(path: string, param: Record<string, string>, fallback: T): Promise<TrResult<T>> {

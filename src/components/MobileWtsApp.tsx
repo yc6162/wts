@@ -28,9 +28,9 @@ function RealtimeShell() {
   const { activeTab } = useMarketStore();
 
   useEffect(() => {
-    realtimeClient.connect();
+    realtimeClient.connect(user?.id ?? "");
     return () => realtimeClient.disconnect();
-  }, []);
+  }, [user?.id]);
 
   return (
     <main className="wts-shell">

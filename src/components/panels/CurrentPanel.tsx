@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { fetchQuote } from "@/lib/tradingApi";
 import { realtimeClient } from "@/lib/realtime";
 import { formatNumber, formatRate, getChangeClass } from "@/lib/format";
+import { createMockQuote } from "@/data/mockMarket";
 import { useAuthStore } from "@/store/auth-store";
 import { useMarketStore } from "@/store/market-store";
 import { StatTile } from "@/components/StatTile";
@@ -23,12 +24,15 @@ export function CurrentPanel() {
     fetchQuote(activeCode, user?.id ?? "").then((result) => {
       if (!mounted) return;
       setQuote(result.data);
-      setTrStatus(result.ok ? "TR 조회 완료" : "TR 실패, 실시간 대기");
+      setTrStatus(result.ok ? "TR 조회 완료" : "실시간 대기");
     });
 
     realtimeClient.subscribe(key, activeCode, (message) => {
       if (message.type !== "quote" || message.code !== activeCode) return;
-      setQuote((prev) => ({ ...(prev as QuoteSnapshot), ...(message.payload as Partial<QuoteSnapshot>) }));
+      setQuote((prev) => ({
+        ...(prev ?? createMockQuote(activeCode)),
+        ...(message.payload as Partial<QuoteSnapshot>)
+      }));
     });
 
     return () => {

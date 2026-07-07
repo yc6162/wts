@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { fetchDailyPrices } from "@/lib/tradingApi";
+import { realtimeClient } from "@/lib/realtime";
 import { formatNumber, formatRate, getChangeClass } from "@/lib/format";
 import { useAuthStore } from "@/store/auth-store";
 import { useMarketStore } from "@/store/market-store";
-import type { DailyPrice } from "@/types/trading";
+import type { DailyPrice, QuoteSnapshot } from "@/types/trading";
 
 // 일자별 탭은 TR 데이터 중심이며 탭 이동 시 별도 실시간 구독은 하지 않는다.
 export function DailyPanel() {
@@ -15,11 +16,21 @@ export function DailyPanel() {
 
   useEffect(() => {
     let mounted = true;
+    const key = `daily-${activeCode}`;
+
     fetchDailyPrices(activeCode, user?.id ?? "").then((result) => {
       if (mounted) setRows(result.data);
     });
+
+    realtimeClient.subscribe(key, activeCode, (message) => {
+      if (message.type !== "quote" || message.code !== activeCode) return;
+      const quote = message.payload as Partial<QuoteSnapshot>;
+      setRows((prev) => updateLatestDailyRow(prev, quote));
+    });
+
     return () => {
       mounted = false;
+      realtimeClient.unsubscribe(key);
     };
   }, [activeCode, user?.id]);
 
@@ -51,4 +62,24 @@ export function DailyPanel() {
       </table>
     </div>
   );
+}
+
+// 현재가 실시간을 일자별 목록의 최신 행에 반영한다.
+function updateLatestDailyRow(rows: DailyPrice[], quote: Partial<QuoteSnapshot>) {
+  if (!rows.length || !quote.price) return rows;
+
+  const next = [...rows];
+  const first = next[0];
+  const change = quote.change ?? first.change;
+  const changeRate = quote.changeRate ?? first.changeRate;
+
+  next[0] = {
+    ...first,
+    close: quote.price,
+    change,
+    changeRate,
+    volume: quote.volume ?? first.volume
+  };
+
+  return next;
 }

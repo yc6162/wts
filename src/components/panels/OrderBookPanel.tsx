@@ -24,7 +24,10 @@ export function OrderBookPanel() {
 
     realtimeClient.subscribe(key, activeCode, (message) => {
       if (message.type !== "orderbook" || message.code !== activeCode) return;
-      setBook(message.payload as OrderBook);
+      setBook((prev) => ({
+        asks: (message.payload as Partial<OrderBook>).asks ?? prev?.asks ?? [],
+        bids: (message.payload as Partial<OrderBook>).bids ?? prev?.bids ?? []
+      }));
     });
 
     return () => {
