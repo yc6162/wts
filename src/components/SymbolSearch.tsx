@@ -5,10 +5,9 @@ import { useMarketStore } from "@/store/market-store";
 
 // MasterCode 목록을 이용해 종목을 선택하는 검색 컴포넌트다.
 export function SymbolSearch() {
-  const { activeCode, symbols, setActiveCode } = useMarketStore();
+  const { activeCode, selectedSymbol, symbols, setActiveCode } = useMarketStore();
   const [keyword, setKeyword] = useState("");
 
-  const selected = symbols.find((item) => item.code === activeCode);
   const filtered = useMemo(() => {
     const text = keyword.trim().toLowerCase();
     if (!text) return symbols.slice(0, 4);
@@ -25,20 +24,20 @@ export function SymbolSearch() {
       symbols.find((item) => item.name.includes(text)) ??
       filtered[0];
 
-    if (!target) {
+    if (!target && !/^\d{4,12}$/.test(text)) {
       console.log("[WTS][SYMBOL] not found", { keyword: text });
       return;
     }
 
-    setActiveCode(target.code);
+    setActiveCode(target?.code ?? text);
     setKeyword("");
   }
 
   return (
     <section className="symbol-box">
       <div className="symbol-title">
-        <span>{selected?.market ?? "KOSPI"}</span>
-        <strong>{selected?.name ?? "삼성전자"}</strong>
+        <span>{selectedSymbol?.market ?? "미지정"}</span>
+        <strong>{selectedSymbol?.name ?? "종목명 없음"}</strong>
         <em>{activeCode}</em>
       </div>
       <div className="symbol-input-row">

@@ -16,8 +16,7 @@ function extractMasterCodeRows(payload: unknown): RawMasterCode[] {
   if (Array.isArray(payload)) return payload as RawMasterCode[];
 
   if (payload && typeof payload === "object") {
-    const arrayValue = Object.values(payload).find(Array.isArray);
-    return (arrayValue ?? []) as RawMasterCode[];
+    return Object.values(payload).flatMap((value) => (Array.isArray(value) ? (value as RawMasterCode[]) : []));
   }
 
   return [];
@@ -28,7 +27,7 @@ export function normalizeMasterCodes(payload: unknown): MarketSymbol[] {
   return extractMasterCodeRows(payload)
     .map((item) => ({
       code: (item.ITM_CD ?? item.code ?? "").trim(),
-      name: (item.KOR_ITMN ?? item.name ?? "").replace(/^%+/, "").trim(),
+      name: (item.KOR_ITMN ?? item.name ?? "").replace(/^[/%]+/, "").trim(),
       market: (item.TMNM ?? item.market ?? "기타").trim()
     }))
     .filter((item) => item.code.length > 0 && item.name.length > 0);

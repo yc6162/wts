@@ -14,7 +14,9 @@ export async function GET() {
       return NextResponse.json(masterSymbols);
     }
 
-    const data = normalizeMasterCodes(await response.json());
+    const buffer = await response.arrayBuffer();
+    const text = new TextDecoder("utf-8").decode(buffer);
+    const data = normalizeMasterCodes(JSON.parse(text));
     return NextResponse.json(data.length > 0 ? data : masterSymbols);
   } catch {
     return NextResponse.json(masterSymbols);

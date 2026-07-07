@@ -103,7 +103,7 @@ class RealtimeClient {
   subscribe(key: string, code: string, handler: RealtimeHandler) {
     const subscription = createSubscription(key, code);
 
-    console.log("[WTS][RTS] subscribe", subscription);
+    console.log("[WTS][RTS] subscribe", { key: subscription.key, code: subscription.code, pName: subscription.pName });
     this.activeCode = code;
     this.handlers.set(key, handler);
     this.subscriptions.set(key, subscription);
@@ -114,7 +114,11 @@ class RealtimeClient {
   unsubscribe(key: string) {
     const subscription = this.subscriptions.get(key);
 
-    console.log("[WTS][RTS] unsubscribe", { key, subscription });
+    console.log("[WTS][RTS] unsubscribe", {
+      key,
+      code: subscription?.code,
+      pName: subscription?.pName
+    });
     this.handlers.delete(key);
     this.subscriptions.delete(key);
 
@@ -170,10 +174,6 @@ class RealtimeClient {
     this.socket.on("push", (data) => this.handlePushPacket(data));
     this.socket.on("tr", (data) => this.handlePushPacket(data));
     this.socket.on("tick", (data) => this.handlePushPacket(data));
-    this.socket.onAny((event, data) => {
-      if (!["push", "tr", "tick"].includes(event)) return;
-      console.log("[WTS][RTS] receive", { event, data });
-    });
   }
 
   // sid를 서버에 되돌려 알리고 로그인 요청을 보낸다.
@@ -199,7 +199,6 @@ class RealtimeClient {
 
     messages.forEach((message) => {
       if (message.code !== this.activeCode) return;
-      console.log("[WTS][RTS] apply", message);
       this.handlers.forEach((handler) => handler(message));
     });
   }
@@ -235,7 +234,7 @@ class RealtimeClient {
       symbols: subscription.symbols
     };
 
-    console.log("[WTS][RTS] pushON", packet);
+    console.log("[WTS][RTS] pushON", { key: subscription.key, code: subscription.code, pName: subscription.pName });
     this.socket.emit("pushON", packet);
   }
 
@@ -253,7 +252,7 @@ class RealtimeClient {
       yWin: subscription.yWin
     };
 
-    console.log("[WTS][RTS] pushOFF", packet);
+    console.log("[WTS][RTS] pushOFF", { key: subscription.key, code: subscription.code, pName: subscription.pName });
     this.socket.emit("pushOFF", packet);
   }
 }
