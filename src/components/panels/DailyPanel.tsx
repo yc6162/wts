@@ -19,7 +19,7 @@ export function DailyPanel() {
     const key = `daily-${activeCode}`;
 
     fetchDailyPrices(activeCode, user?.id ?? "").then((result) => {
-      if (mounted) setRows(result.data);
+      if (mounted) setRows(result.data ?? []);
     });
 
     realtimeClient.subscribe(key, activeCode, (message) => {
@@ -34,7 +34,7 @@ export function DailyPanel() {
     };
   }, [activeCode, user?.id]);
 
-  if (!rows.length) return <div className="empty-state">일자별 데이터를 불러오는 중입니다.</div>;
+  if (!rows.length) return <div className="empty-state">수신된 일자별 데이터가 없습니다.</div>;
 
   return (
     <div className="table-panel">

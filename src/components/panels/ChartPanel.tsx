@@ -19,7 +19,7 @@ export function ChartPanel() {
     const key = `chart-${activeCode}`;
 
     fetchChart(activeCode, user?.id ?? "").then((result) => {
-      if (mounted) setPoints(result.data);
+      if (mounted) setPoints(result.data ?? []);
     });
 
     realtimeClient.subscribe(key, activeCode, (message) => {
@@ -37,7 +37,7 @@ export function ChartPanel() {
   const maxPrice = useMemo(() => Math.max(...points.map((item) => item.high), 1), [points]);
   const minPrice = useMemo(() => Math.min(...points.map((item) => item.low), 0), [points]);
 
-  if (!points.length) return <div className="empty-state">차트를 불러오는 중입니다.</div>;
+  if (!points.length) return <div className="empty-state">수신된 차트 데이터가 없습니다.</div>;
 
   return (
     <div className="chart-panel">

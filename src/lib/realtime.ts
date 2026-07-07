@@ -1,5 +1,4 @@
 import { io, type Socket } from "socket.io-client";
-import { createMockOrderBook, createMockQuote } from "@/data/mockMarket";
 import { normalizeRtsPacket } from "@/lib/rtsFid";
 import type { RealtimeMessage } from "@/types/trading";
 
@@ -54,63 +53,48 @@ const orderBookSymbols = [
 // 앱 시작 시 한 번만 연결되고, 화면별 구독만 바꾸는 RTS 클라이언트다.
 class RealtimeClient {
   private socket: Socket | null = null;
-  private timer: ReturnType<typeof setInterval> | null = null;
   private handlers = new Map<string, RealtimeHandler>();
   private subscriptions = new Map<string, RtsSubscription>();
   private activeCode = "005930";
   private connected = false;
+  private loginReady = false;
   private loginId = "";
+  private lastUploadedSid = "";
 
   // 공통 RTS 연결을 시작한다. env는 https URL 그대로 사용한다.
   connect(loginId = "") {
     const url = process.env.NEXT_PUBLIC_RTS_URL;
     this.loginId = loginId;
 
-    if (url && !this.socket) {
-      this.socket = io(url, {
-        transports: ["websocket"],
-        secure: url.startsWith("https"),
-        reconnection: true,
-        forceNew: true
-      });
-
-      this.socket.on("connect", () => {
-        this.connected = true;
-        this.stopMockFeed();
-        setTimeout(() => this.socket?.emit("mbrLogin", this.loginId), 200);
-      });
-
-      this.socket.on("login", (data) => {
-        if (data === "OK") {
-          this.resubscribeAll();
-        }
-      });
-
-      this.socket.on("disconnect", () => {
-        this.connected = false;
-        this.startMockFeed();
-      });
-
-      this.socket.on("connect_error", () => {
-        this.connected = false;
-        this.startMockFeed();
-      });
-
-      this.socket.on("push", (data) => this.handlePushPacket(data));
-      this.socket.on("tr", (data) => this.handlePushPacket(data));
-      this.socket.on("tick", (data) => this.handlePushPacket(data));
+    if (!url) {
+      console.log("[WTS][RTS] url empty. realtime disabled");
       return;
     }
 
-    this.startMockFeed();
+    if (this.socket) {
+      console.log("[WTS][RTS] already connected or connecting");
+      return;
+    }
+
+    console.log("[WTS][RTS] connect start", { url, loginId });
+    this.socket = io(url, {
+      transports: ["websocket"],
+      secure: url.startsWith("https"),
+      reconnection: true,
+      forceNew: true
+    });
+
+    this.bindSocketEvents();
   }
 
   // 화면이 사라질 때 공통 연결을 정리한다.
   disconnect() {
+    console.log("[WTS][RTS] disconnect");
     this.socket?.disconnect();
     this.socket = null;
     this.connected = false;
-    this.stopMockFeed();
+    this.loginReady = false;
+    this.lastUploadedSid = "";
     this.handlers.clear();
     this.subscriptions.clear();
   }
@@ -119,6 +103,7 @@ class RealtimeClient {
   subscribe(key: string, code: string, handler: RealtimeHandler) {
     const subscription = createSubscription(key, code);
 
+    console.log("[WTS][RTS] subscribe", subscription);
     this.activeCode = code;
     this.handlers.set(key, handler);
     this.subscriptions.set(key, subscription);
@@ -129,12 +114,81 @@ class RealtimeClient {
   unsubscribe(key: string) {
     const subscription = this.subscriptions.get(key);
 
+    console.log("[WTS][RTS] unsubscribe", { key, subscription });
     this.handlers.delete(key);
     this.subscriptions.delete(key);
 
     if (subscription) {
       this.sendPushOff(subscription);
     }
+  }
+
+  // socket.io 서버 이벤트를 RTS 순서에 맞춰 묶는다.
+  private bindSocketEvents() {
+    if (!this.socket) return;
+
+    this.socket.on("connect", () => {
+      const sid = this.socket?.id ?? "";
+      this.connected = true;
+      console.log("[WTS][RTS] sid received", { sid });
+      this.sendSidAndLogin(sid);
+    });
+
+    this.socket.on("sid", (sid) => {
+      console.log("[WTS][RTS] sid event", { sid });
+      this.sendSidAndLogin(String(sid ?? ""));
+    });
+
+    this.socket.on("login", (data) => {
+      console.log("[WTS][RTS] login", data);
+      if (data === "OK") {
+        this.loginReady = true;
+        this.resubscribeAll();
+      }
+    });
+
+    this.socket.on("MSGID", (data) => {
+      console.log("[WTS][RTS] MSGID", data);
+      if (data === "RTMREADY") {
+        this.socket?.emit("hello", "push1");
+        this.connected = true;
+      }
+    });
+
+    this.socket.on("disconnect", (reason) => {
+      console.log("[WTS][RTS] disconnected", { reason });
+      this.connected = false;
+      this.loginReady = false;
+    });
+
+    this.socket.on("connect_error", (error) => {
+      console.log("[WTS][RTS] connect_error", error.message);
+      this.connected = false;
+      this.loginReady = false;
+    });
+
+    this.socket.on("push", (data) => this.handlePushPacket(data));
+    this.socket.on("tr", (data) => this.handlePushPacket(data));
+    this.socket.on("tick", (data) => this.handlePushPacket(data));
+    this.socket.onAny((event, data) => {
+      if (!["push", "tr", "tick"].includes(event)) return;
+      console.log("[WTS][RTS] receive", { event, data });
+    });
+  }
+
+  // sid를 서버에 되돌려 알리고 로그인 요청을 보낸다.
+  private sendSidAndLogin(sid: string) {
+    if (!this.socket) return;
+    if (sid && this.lastUploadedSid === sid) return;
+
+    if (sid) {
+      this.lastUploadedSid = sid;
+      this.socket.emit("sid", sid);
+      console.log("[WTS][RTS] sid upload", { sid });
+    }
+
+    this.socket.emit("mbrLogin", this.loginId);
+    console.log("[WTS][RTS] mbrLogin", { loginId: this.loginId });
   }
 
   // 서버 push 원본 패킷을 화면용 메시지로 변환해서 배포한다.
@@ -145,20 +199,29 @@ class RealtimeClient {
 
     messages.forEach((message) => {
       if (message.code !== this.activeCode) return;
+      console.log("[WTS][RTS] apply", message);
       this.handlers.forEach((handler) => handler(message));
     });
   }
 
-  // 연결 직후 기존 탭 구독을 다시 서버에 등록한다.
+  // 로그인 이후 기존 탭 구독을 다시 서버에 등록한다.
   private resubscribeAll() {
+    console.log("[WTS][RTS] resubscribe", { count: this.subscriptions.size });
     this.subscriptions.forEach((subscription) => this.sendPushOn(subscription));
   }
 
   // 기존 WTS 서버 프로토콜에 맞춰 pushON을 보낸다.
   private sendPushOn(subscription: RtsSubscription) {
-    if (!this.connected || !this.socket) return;
+    if (!this.connected || !this.loginReady || !this.socket) {
+      console.log("[WTS][RTS] pushON pending", {
+        key: subscription.key,
+        connected: this.connected,
+        loginReady: this.loginReady
+      });
+      return;
+    }
 
-    this.socket.emit("pushON", {
+    const packet = {
       reqGbn: "stok",
       svcc: subscription.pName,
       xWin: subscription.xWin,
@@ -170,54 +233,28 @@ class RealtimeClient {
       value: subscription.code,
       values: [subscription.code],
       symbols: subscription.symbols
-    });
+    };
+
+    console.log("[WTS][RTS] pushON", packet);
+    this.socket.emit("pushON", packet);
   }
 
   // 기존 WTS 서버 프로토콜에 맞춰 pushOFF를 보낸다.
   private sendPushOff(subscription: RtsSubscription) {
-    if (!this.connected || !this.socket) return;
+    if (!this.connected || !this.socket) {
+      console.log("[WTS][RTS] pushOFF skipped", { key: subscription.key, connected: this.connected });
+      return;
+    }
 
-    this.socket.emit("pushOFF", {
+    const packet = {
       reqGbn: "stok",
       svcc: subscription.pName,
       xWin: subscription.xWin,
       yWin: subscription.yWin
-    });
-  }
+    };
 
-  // 개발용 mock feed를 멈춘다.
-  private stopMockFeed() {
-    if (this.timer) clearInterval(this.timer);
-    this.timer = null;
-  }
-
-  // 개발 환경에서 실시간 흐름을 확인할 수 있는 간단한 mock feed다.
-  private startMockFeed() {
-    if (this.timer) return;
-
-    this.timer = setInterval(() => {
-      const quote = createMockQuote(this.activeCode);
-      const tick = Math.round(Math.sin(Date.now() / 1400) * 500);
-      const message: RealtimeMessage = {
-        type: "quote",
-        code: this.activeCode,
-        payload: {
-          ...quote,
-          price: quote.price + tick,
-          change: quote.change + tick,
-          changeRate: Number((((quote.change + tick) / quote.open) * 100).toFixed(2)),
-          tradeTime: new Date().toLocaleTimeString("ko-KR", { hour12: false })
-        }
-      };
-
-      this.handlers.forEach((handler) => handler(message));
-
-      if (Date.now() % 3 < 2) {
-        this.handlers.forEach((handler) =>
-          handler({ type: "orderbook", code: this.activeCode, payload: createMockOrderBook(this.activeCode) })
-        );
-      }
-    }, 1500);
+    console.log("[WTS][RTS] pushOFF", packet);
+    this.socket.emit("pushOFF", packet);
   }
 }
 

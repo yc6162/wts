@@ -25,7 +25,19 @@ export function MarketProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ activeTab, activeCode, symbols, setActiveTab, setActiveCode }),
+    () => ({
+      activeTab,
+      activeCode,
+      symbols,
+      setActiveTab: (tab: WtsTab) => {
+        console.log("[WTS][TAB] change", { from: activeTab, to: tab, code: activeCode });
+        setActiveTab(tab);
+      },
+      setActiveCode: (code: string) => {
+        console.log("[WTS][SYMBOL] change", { from: activeCode, to: code, tab: activeTab });
+        setActiveCode(code);
+      }
+    }),
     [activeTab, activeCode, symbols]
   );
 

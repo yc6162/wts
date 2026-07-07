@@ -36,7 +36,7 @@ export function OrderBookPanel() {
     };
   }, [activeCode, user?.id]);
 
-  if (!book) return <div className="empty-state">호가를 불러오는 중입니다.</div>;
+  if (!book) return <div className="empty-state">수신된 호가 데이터가 없습니다.</div>;
 
   return (
     <div className="orderbook-panel">

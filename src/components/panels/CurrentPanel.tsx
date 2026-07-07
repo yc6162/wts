@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { fetchQuote } from "@/lib/tradingApi";
 import { realtimeClient } from "@/lib/realtime";
 import { formatNumber, formatRate, getChangeClass } from "@/lib/format";
-import { createMockQuote } from "@/data/mockMarket";
 import { useAuthStore } from "@/store/auth-store";
 import { useMarketStore } from "@/store/market-store";
 import { StatTile } from "@/components/StatTile";
@@ -14,7 +13,7 @@ import type { QuoteSnapshot } from "@/types/trading";
 export function CurrentPanel() {
   const { user } = useAuthStore();
   const { activeCode } = useMarketStore();
-  const [quote, setQuote] = useState<QuoteSnapshot | null>(null);
+  const [quote, setQuote] = useState<Partial<QuoteSnapshot> | null>(null);
   const [trStatus, setTrStatus] = useState("TR 조회 대기");
 
   useEffect(() => {
@@ -29,10 +28,7 @@ export function CurrentPanel() {
 
     realtimeClient.subscribe(key, activeCode, (message) => {
       if (message.type !== "quote" || message.code !== activeCode) return;
-      setQuote((prev) => ({
-        ...(prev ?? createMockQuote(activeCode)),
-        ...(message.payload as Partial<QuoteSnapshot>)
-      }));
+      setQuote((prev) => ({ ...(prev ?? {}), ...(message.payload as Partial<QuoteSnapshot>) }));
     });
 
     return () => {
@@ -41,24 +37,27 @@ export function CurrentPanel() {
     };
   }, [activeCode, user?.id]);
 
-  if (!quote) return <div className="empty-state">현재가를 불러오는 중입니다.</div>;
+  if (!quote?.price) return <div className="empty-state">수신된 현재가 데이터가 없습니다.</div>;
+
+  const change = quote.change ?? 0;
+  const changeRate = quote.changeRate ?? 0;
 
   return (
     <div className="current-panel">
       <div className="price-card">
         <span className="status-pill">{trStatus}</span>
-        <p>{quote.tradeTime}</p>
-        <strong className={getChangeClass(quote.change)}>{formatNumber(quote.price)}</strong>
-        <em className={getChangeClass(quote.change)}>
-          {formatNumber(quote.change)} ({formatRate(quote.changeRate)})
+        <p>{quote.tradeTime ?? "-"}</p>
+        <strong className={getChangeClass(change)}>{formatNumber(quote.price)}</strong>
+        <em className={getChangeClass(change)}>
+          {formatNumber(change)} ({formatRate(changeRate)})
         </em>
       </div>
 
       <div className="stat-grid">
-        <StatTile label="시가" value={formatNumber(quote.open)} changeValue={quote.open - quote.price} />
-        <StatTile label="고가" value={formatNumber(quote.high)} changeValue={quote.high - quote.open} />
-        <StatTile label="저가" value={formatNumber(quote.low)} changeValue={quote.low - quote.open} />
-        <StatTile label="거래량" value={formatNumber(quote.volume)} />
+        {quote.open !== undefined && <StatTile label="시가" value={formatNumber(quote.open)} changeValue={quote.open - quote.price} />}
+        {quote.high !== undefined && <StatTile label="고가" value={formatNumber(quote.high)} changeValue={quote.high - (quote.open ?? quote.high)} />}
+        {quote.low !== undefined && <StatTile label="저가" value={formatNumber(quote.low)} changeValue={quote.low - (quote.open ?? quote.low)} />}
+        {quote.volume !== undefined && <StatTile label="거래량" value={formatNumber(quote.volume)} />}
       </div>
     </div>
   );

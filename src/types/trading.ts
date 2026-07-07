@@ -61,6 +61,6 @@ export type RealtimeMessage = {
 
 export type TrResult<T> = {
   ok: boolean;
-  data: T;
+  data: T | null;
   error?: string;
 };

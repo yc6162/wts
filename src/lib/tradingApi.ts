@@ -1,4 +1,4 @@
-import { createMockChart, createMockDaily, createMockOrderBook, createMockQuote, masterSymbols } from "@/data/mockMarket";
+import { masterSymbols } from "@/data/mockMarket";
 import { normalizeMasterCodes } from "@/lib/masterCode";
 import type { ChartPoint, DailyPrice, LoginUser, MarketSymbol, OrderBook, QuoteSnapshot, TrResult } from "@/types/trading";
 
@@ -6,7 +6,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_TR_API_URL ?? "";
 const MASTER_CODE_URL = "/api/master-code";
 
 // API 서버 응답이 없을 때도 화면을 살리기 위한 공통 TR 래퍼다.
-async function requestTr<T>(path: string, param: Record<string, string>, fallback: T): Promise<TrResult<T>> {
+async function requestTr<T>(path: string, param: Record<string, string>, fallback: T | null): Promise<TrResult<T>> {
   if (!API_BASE_URL) {
     return { ok: false, data: fallback, error: "TR API URL is empty" };
   }
@@ -53,20 +53,20 @@ export async function loadMasterCodes(): Promise<MarketSymbol[]> {
 
 // 현재가 TR을 조회한다.
 export function fetchQuote(code: string, userId: string) {
-  return requestTr<QuoteSnapshot>("/quote/current", { code, userId }, createMockQuote(code));
+  return requestTr<QuoteSnapshot>("/quote/current", { code, userId }, null);
 }
 
 // 차트 TR을 조회한다.
 export function fetchChart(code: string, userId: string) {
-  return requestTr<ChartPoint[]>("/quote/chart", { code, userId }, createMockChart(code));
+  return requestTr<ChartPoint[]>("/quote/chart", { code, userId }, []);
 }
 
 // 일자별 TR을 조회한다.
 export function fetchDailyPrices(code: string, userId: string) {
-  return requestTr<DailyPrice[]>("/quote/daily", { code, userId }, createMockDaily(code));
+  return requestTr<DailyPrice[]>("/quote/daily", { code, userId }, []);
 }
 
 // 호가 TR을 조회한다.
 export function fetchOrderBook(code: string, userId: string) {
-  return requestTr<OrderBook>("/quote/orderbook", { code, userId }, createMockOrderBook(code));
+  return requestTr<OrderBook>("/quote/orderbook", { code, userId }, null);
 }
