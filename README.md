@@ -2,6 +2,8 @@
 
 로그인 기반 모바일 웹 트레이딩 시스템 샘플입니다.
 
+팀 개발 가이드는 [docs/DEVELOPMENT_GUIDE.md](docs/DEVELOPMENT_GUIDE.md)를 참고하세요.
+
 ## 실행
 
 ```bash
