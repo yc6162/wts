@@ -58,7 +58,7 @@ export function SymbolSearch() {
         <div className="symbol-list">
           {filtered.map((symbol) => (
             <button
-              key={symbol.code}
+              key={`${symbol.code}-${symbol.market}-${symbol.name}`}
               type="button"
               onClick={() => {
                 setActiveCode(symbol.code);

@@ -24,11 +24,20 @@ function extractMasterCodeRows(payload: unknown): RawMasterCode[] {
 
 // 외부 MasterCode 필드를 앱에서 쓰는 공통 종목 형태로 변환한다.
 export function normalizeMasterCodes(payload: unknown): MarketSymbol[] {
-  return extractMasterCodeRows(payload)
+  const uniqueSymbols = new Map<string, MarketSymbol>();
+
+  extractMasterCodeRows(payload)
     .map((item) => ({
       code: (item.ITM_CD ?? item.code ?? "").trim(),
       name: (item.KOR_ITMN ?? item.name ?? "").replace(/^[/%]+/, "").trim(),
       market: (item.TMNM ?? item.market ?? "기타").trim()
     }))
-    .filter((item) => item.code.length > 0 && item.name.length > 0);
+    .filter((item) => item.code.length > 0 && item.name.length > 0)
+    .forEach((item) => {
+      if (!uniqueSymbols.has(item.code)) {
+        uniqueSymbols.set(item.code, item);
+      }
+    });
+
+  return Array.from(uniqueSymbols.values());
 }
