@@ -1,26 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchDailyPrices } from "@/lib/tradingApi";
 import { realtimeClient } from "@/lib/realtime";
+import { useDailyPricesQuery } from "@/hooks/useWtsQueries";
 import { formatNumber, formatRate, getChangeClass } from "@/lib/format";
-import { useAuthStore } from "@/store/auth-store";
 import { useMarketStore } from "@/store/market-store";
 import type { DailyPrice, QuoteSnapshot } from "@/types/trading";
 
 // 일자별 탭은 TR 데이터 중심이며 탭 이동 시 별도 실시간 구독은 하지 않는다.
 export function DailyPanel() {
-  const { user } = useAuthStore();
   const { activeCode } = useMarketStore();
+  const dailyQuery = useDailyPricesQuery(activeCode);
   const [rows, setRows] = useState<DailyPrice[]>([]);
 
   useEffect(() => {
-    let mounted = true;
-    const key = `daily-${activeCode}`;
+    setRows(dailyQuery.data?.data ?? []);
+  }, [activeCode, dailyQuery.data]);
 
-    fetchDailyPrices(activeCode).then((result) => {
-      if (mounted) setRows(result.data ?? []);
-    });
+  useEffect(() => {
+    const key = `daily-${activeCode}`;
 
     realtimeClient.subscribe(key, activeCode, (message) => {
       if (message.type !== "quote" || message.code !== activeCode) return;
@@ -29,10 +27,9 @@ export function DailyPanel() {
     });
 
     return () => {
-      mounted = false;
       realtimeClient.unsubscribe(key);
     };
-  }, [activeCode, user?.id]);
+  }, [activeCode]);
 
   if (!rows.length) return <div className="empty-state">수신된 일자별 데이터가 없습니다.</div>;
 

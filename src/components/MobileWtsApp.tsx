@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { AuthProvider, useAuthStore } from "@/store/auth-store";
 import { MarketProvider, useMarketStore } from "@/store/market-store";
 import { realtimeClient } from "@/lib/realtime";
+import { QueryProvider } from "@/components/QueryProvider";
 import { ChartPanel } from "@/components/panels/ChartPanel";
 import { CurrentPanel } from "@/components/panels/CurrentPanel";
 import { DailyPanel } from "@/components/panels/DailyPanel";
@@ -14,11 +15,13 @@ import { TabBar } from "@/components/TabBar";
 // Provider를 한 곳에 모아 화면 컴포넌트가 로직에만 집중하게 한다.
 export function MobileWtsApp() {
   return (
-    <AuthProvider>
-      <MarketProvider>
-        <RealtimeShell />
-      </MarketProvider>
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <MarketProvider>
+          <RealtimeShell />
+        </MarketProvider>
+      </AuthProvider>
+    </QueryProvider>
   );
 }
 

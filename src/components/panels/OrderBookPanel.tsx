@@ -1,26 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchOrderBook } from "@/lib/tradingApi";
 import { realtimeClient } from "@/lib/realtime";
+import { useOrderBookQuery } from "@/hooks/useWtsQueries";
 import { formatNumber, getChangeClass } from "@/lib/format";
-import { useAuthStore } from "@/store/auth-store";
 import { useMarketStore } from "@/store/market-store";
 import type { OrderBook } from "@/types/trading";
 
 // 호가 탭은 TR 조회 후 orderbook 실시간 패킷으로 잔량을 갱신한다.
 export function OrderBookPanel() {
-  const { user } = useAuthStore();
   const { activeCode } = useMarketStore();
+  const orderBookQuery = useOrderBookQuery(activeCode);
   const [book, setBook] = useState<OrderBook | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-    const key = `orderbook-${activeCode}`;
+    setBook(orderBookQuery.data?.data ?? null);
+  }, [activeCode, orderBookQuery.data]);
 
-    fetchOrderBook(activeCode).then((result) => {
-      if (mounted) setBook(result.data);
-    });
+  useEffect(() => {
+    const key = `orderbook-${activeCode}`;
 
     realtimeClient.subscribe(key, activeCode, (message) => {
       if (message.type !== "orderbook" || message.code !== activeCode) return;
@@ -31,10 +29,9 @@ export function OrderBookPanel() {
     });
 
     return () => {
-      mounted = false;
       realtimeClient.unsubscribe(key);
     };
-  }, [activeCode, user?.id]);
+  }, [activeCode]);
 
   if (!book) return <div className="empty-state">수신된 호가 데이터가 없습니다.</div>;
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { loadMasterCodes } from "@/lib/tradingApi";
+import { createContext, useContext, useMemo, useState } from "react";
+import { useMasterCodeQuery } from "@/hooks/useWtsQueries";
 import type { MarketSymbol, WtsTab } from "@/types/trading";
 
 type MarketStore = {
@@ -19,12 +19,8 @@ const MarketContext = createContext<MarketStore | null>(null);
 export function MarketProvider({ children }: { children: React.ReactNode }) {
   const [activeTab, setActiveTab] = useState<WtsTab>("current");
   const [activeCode, setActiveCode] = useState("005930");
-  const [symbols, setSymbols] = useState<MarketSymbol[]>([]);
+  const { data: symbols = [] } = useMasterCodeQuery();
   const selectedSymbol = symbols.find((item) => item.code === activeCode) ?? null;
-
-  useEffect(() => {
-    loadMasterCodes().then(setSymbols);
-  }, []);
 
   const value = useMemo(
     () => ({

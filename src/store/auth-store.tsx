@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useMemo, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { loginByDemoId } from "@/lib/tradingApi";
 import type { LoginUser } from "@/types/trading";
 
@@ -19,13 +20,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     accountNo: "123-45-678901",
     token: "demo-token"
   });
+  const loginMutation = useMutation({
+    mutationFn: loginByDemoId,
+    onSuccess: setUser
+  });
 
   const value = useMemo<AuthStore>(
     () => ({
       user,
-      login: async (id: string) => setUser(await loginByDemoId(id))
+      login: async (id: string) => {
+        await loginMutation.mutateAsync(id);
+      }
     }),
-    [user]
+    [loginMutation, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

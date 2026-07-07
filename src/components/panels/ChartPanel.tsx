@@ -2,16 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CandlestickSeries, createChart, HistogramSeries, type IChartApi, type ISeriesApi, type Time } from "lightweight-charts";
-import { fetchChart } from "@/lib/tradingApi";
 import { realtimeClient } from "@/lib/realtime";
-import { useAuthStore } from "@/store/auth-store";
+import { useChartQuery } from "@/hooks/useWtsQueries";
 import { useMarketStore } from "@/store/market-store";
 import type { ChartPoint, QuoteSnapshot } from "@/types/trading";
 
 // 차트 탭은 TR 캔들 데이터를 그리고 quote 실시간으로 마지막 봉을 갱신한다.
 export function ChartPanel() {
-  const { user } = useAuthStore();
   const { activeCode } = useMarketStore();
+  const chartQuery = useChartQuery(activeCode);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -19,12 +18,11 @@ export function ChartPanel() {
   const [points, setPoints] = useState<ChartPoint[]>([]);
 
   useEffect(() => {
-    let mounted = true;
-    const key = `chart-${activeCode}`;
+    setPoints(chartQuery.data?.data ?? []);
+  }, [activeCode, chartQuery.data]);
 
-    fetchChart(activeCode).then((result) => {
-      if (mounted) setPoints(result.data ?? []);
-    });
+  useEffect(() => {
+    const key = `chart-${activeCode}`;
 
     realtimeClient.subscribe(key, activeCode, (message) => {
       if (message.type !== "quote" || message.code !== activeCode) return;
@@ -33,10 +31,9 @@ export function ChartPanel() {
     });
 
     return () => {
-      mounted = false;
       realtimeClient.unsubscribe(key);
     };
-  }, [activeCode, user?.id]);
+  }, [activeCode]);
 
   useEffect(() => {
     if (!containerRef.current || chartRef.current) return;
@@ -92,7 +89,13 @@ export function ChartPanel() {
   }, []);
 
   useEffect(() => {
-    if (!points.length || !candleSeriesRef.current || !volumeSeriesRef.current) return;
+    if (!candleSeriesRef.current || !volumeSeriesRef.current) return;
+
+    if (!points.length) {
+      candleSeriesRef.current.setData([]);
+      volumeSeriesRef.current.setData([]);
+      return;
+    }
 
     const sortedPoints = [...points].sort((a, b) => a.time - b.time);
 
