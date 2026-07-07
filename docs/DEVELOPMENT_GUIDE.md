@@ -281,10 +281,10 @@ app/api/master-code/route.ts
 src/lib/masterCode.ts
 ```
 
-MasterCode URL:
+MasterCode URL은 코드에 고정하지 않고 env에서 읽습니다.
 
 ```text
-https://securities.miraeasset.com/code/wtscode.wjson
+NEXT_PUBLIC_MASTER_CODE_URL=https://securities.miraeasset.com/code/wtscode.wjson
 ```
 
 미래에셋 MasterCode는 여러 배열을 가진 객체입니다.

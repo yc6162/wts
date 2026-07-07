@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { masterSymbols } from "@/data/mockMarket";
-import { MIRAE_ASSET_MASTER_CODE_URL, normalizeMasterCodes } from "@/lib/masterCode";
+import { normalizeMasterCodes } from "@/lib/masterCode";
 
 export const dynamic = "force-dynamic";
-const MASTER_CODE_URL = process.env.NEXT_PUBLIC_MASTER_CODE_URL ?? MIRAE_ASSET_MASTER_CODE_URL;
+const MASTER_CODE_URL = process.env.NEXT_PUBLIC_MASTER_CODE_URL ?? "";
 
 // 브라우저 CORS 영향을 피하기 위해 서버에서 미래에셋 MasterCode를 받아온다.
 export async function GET() {
+  if (!MASTER_CODE_URL) {
+    return NextResponse.json(masterSymbols);
+  }
+
   try {
     const response = await fetch(MASTER_CODE_URL, { cache: "no-store" });
 

@@ -1,7 +1,5 @@
 import type { MarketSymbol } from "@/types/trading";
 
-export const MIRAE_ASSET_MASTER_CODE_URL = "https://securities.miraeasset.com/code/wtscode.wjson";
-
 type RawMasterCode = {
   ITM_CD?: string;
   KOR_ITMN?: string;

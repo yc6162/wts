@@ -19,5 +19,6 @@ NEXT_PUBLIC_RTS_URL=https://your-rts-api.example.com
 NEXT_PUBLIC_MASTER_CODE_URL=https://your-master-code.example.com/wtscode.wjson
 ```
 
+MasterCode 주소는 코드에 고정하지 않고 `NEXT_PUBLIC_MASTER_CODE_URL` env에서 읽습니다.
 MasterCode는 서버 라우트에서 받아오므로 브라우저 CORS 영향을 줄입니다.
 TR 서버나 RTS 서버가 연결되지 않아도 mock fallback으로 화면과 실시간 흐름을 확인할 수 있습니다.
