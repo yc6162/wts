@@ -18,7 +18,7 @@ export function DailyPanel() {
     let mounted = true;
     const key = `daily-${activeCode}`;
 
-    fetchDailyPrices(activeCode, user?.id ?? "").then((result) => {
+    fetchDailyPrices(activeCode).then((result) => {
       if (mounted) setRows(result.data ?? []);
     });
 

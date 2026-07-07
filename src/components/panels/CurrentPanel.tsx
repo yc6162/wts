@@ -20,7 +20,7 @@ export function CurrentPanel() {
     let mounted = true;
     const key = `current-${activeCode}`;
 
-    fetchQuote(activeCode, user?.id ?? "").then((result) => {
+    fetchQuote(activeCode).then((result) => {
       if (!mounted) return;
       setQuote(result.data);
       setTrStatus(result.ok ? "TR 조회 완료" : "실시간 대기");

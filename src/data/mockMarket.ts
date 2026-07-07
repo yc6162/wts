@@ -51,7 +51,7 @@ export function createMockChart(code: string): ChartPoint[] {
     const close = Math.round(base + move + (index % 2 === 0 ? 260 : -220));
 
     return {
-      time: `07/${String(index + 1).padStart(2, "0")}`,
+      time: Math.floor(new Date(2026, 6, index + 1).getTime() / 1000),
       open,
       high: Math.max(open, close) + 420,
       low: Math.min(open, close) - 360,

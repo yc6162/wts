@@ -18,7 +18,7 @@ export function OrderBookPanel() {
     let mounted = true;
     const key = `orderbook-${activeCode}`;
 
-    fetchOrderBook(activeCode, user?.id ?? "").then((result) => {
+    fetchOrderBook(activeCode).then((result) => {
       if (mounted) setBook(result.data);
     });
 

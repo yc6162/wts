@@ -17,6 +17,7 @@ export type QuoteSnapshot = {
   code: string;
   name: string;
   price: number;
+  priceSign?: number;
   change: number;
   changeRate: number;
   open: number;
@@ -27,7 +28,7 @@ export type QuoteSnapshot = {
 };
 
 export type ChartPoint = {
-  time: string;
+  time: number;
   open: number;
   high: number;
   low: number;
@@ -38,6 +39,7 @@ export type ChartPoint = {
 export type DailyPrice = {
   date: string;
   close: number;
+  closeSign?: number;
   change: number;
   changeRate: number;
   volume: number;

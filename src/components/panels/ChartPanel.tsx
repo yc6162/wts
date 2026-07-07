@@ -1,24 +1,28 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { CandlestickSeries, createChart, HistogramSeries, type IChartApi, type ISeriesApi, type Time } from "lightweight-charts";
 import { fetchChart } from "@/lib/tradingApi";
 import { realtimeClient } from "@/lib/realtime";
-import { formatNumber } from "@/lib/format";
 import { useAuthStore } from "@/store/auth-store";
 import { useMarketStore } from "@/store/market-store";
 import type { ChartPoint, QuoteSnapshot } from "@/types/trading";
 
-// 차트 탭은 TR 봉 데이터를 먼저 그리고 quote 실시간으로 마지막 봉을 갱신한다.
+// 차트 탭은 TR 캔들 데이터를 그리고 quote 실시간으로 마지막 봉을 갱신한다.
 export function ChartPanel() {
   const { user } = useAuthStore();
   const { activeCode } = useMarketStore();
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
+  const candleSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+  const volumeSeriesRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const [points, setPoints] = useState<ChartPoint[]>([]);
 
   useEffect(() => {
     let mounted = true;
     const key = `chart-${activeCode}`;
 
-    fetchChart(activeCode, user?.id ?? "").then((result) => {
+    fetchChart(activeCode).then((result) => {
       if (mounted) setPoints(result.data ?? []);
     });
 
@@ -34,36 +38,86 @@ export function ChartPanel() {
     };
   }, [activeCode, user?.id]);
 
-  const maxPrice = useMemo(() => Math.max(...points.map((item) => item.high), 1), [points]);
-  const minPrice = useMemo(() => Math.min(...points.map((item) => item.low), 0), [points]);
+  useEffect(() => {
+    if (!containerRef.current || chartRef.current) return;
+
+    const chart = createChart(containerRef.current, {
+      height: 330,
+      layout: {
+        background: { color: "#17212b" },
+        textColor: "#8ea1ae"
+      },
+      grid: {
+        vertLines: { color: "#22313d" },
+        horzLines: { color: "#22313d" }
+      },
+      rightPriceScale: { borderColor: "#314251" },
+      timeScale: { borderColor: "#314251", timeVisible: true }
+    });
+
+    const candleSeries = chart.addSeries(CandlestickSeries, {
+      upColor: "#f05a5a",
+      downColor: "#4e9df7",
+      borderUpColor: "#f05a5a",
+      borderDownColor: "#4e9df7",
+      wickUpColor: "#f05a5a",
+      wickDownColor: "#4e9df7"
+    });
+    const volumeSeries = chart.addSeries(HistogramSeries, {
+      priceFormat: { type: "volume" },
+      priceScaleId: ""
+    });
+
+    volumeSeries.priceScale().applyOptions({
+      scaleMargins: { top: 0.8, bottom: 0 }
+    });
+
+    chartRef.current = chart;
+    candleSeriesRef.current = candleSeries;
+    volumeSeriesRef.current = volumeSeries;
+
+    const observer = new ResizeObserver(() => {
+      if (!containerRef.current) return;
+      chart.applyOptions({ width: containerRef.current.clientWidth });
+    });
+    observer.observe(containerRef.current);
+
+    return () => {
+      observer.disconnect();
+      chart.remove();
+      chartRef.current = null;
+      candleSeriesRef.current = null;
+      volumeSeriesRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!points.length || !candleSeriesRef.current || !volumeSeriesRef.current) return;
+
+    candleSeriesRef.current.setData(
+      points.map((point) => ({
+        time: point.time as Time,
+        open: point.open,
+        high: point.high,
+        low: point.low,
+        close: point.close
+      }))
+    );
+    volumeSeriesRef.current.setData(
+      points.map((point) => ({
+        time: point.time as Time,
+        value: point.volume,
+        color: point.close >= point.open ? "rgba(240,90,90,0.45)" : "rgba(78,157,247,0.45)"
+      }))
+    );
+    chartRef.current?.timeScale().fitContent();
+  }, [points]);
 
   if (!points.length) return <div className="empty-state">수신된 차트 데이터가 없습니다.</div>;
 
   return (
     <div className="chart-panel">
-      <div className="chart-header">
-        <span>1일</span>
-        <strong>{formatNumber(points[points.length - 1].close)}</strong>
-      </div>
-      <div className="candle-chart">
-        {points.map((point) => {
-          const top = toPercent(point.high, minPrice, maxPrice);
-          const bottom = toPercent(point.low, minPrice, maxPrice);
-          const open = toPercent(point.open, minPrice, maxPrice);
-          const close = toPercent(point.close, minPrice, maxPrice);
-          const up = point.close >= point.open;
-
-          return (
-            <div className="candle-slot" key={point.time}>
-              <span className="wick" style={{ top: `${top}%`, height: `${bottom - top}%` }} />
-              <span
-                className={`body ${up ? "up" : "down"}`}
-                style={{ top: `${Math.min(open, close)}%`, height: `${Math.max(Math.abs(close - open), 2)}%` }}
-              />
-            </div>
-          );
-        })}
-      </div>
+      <div ref={containerRef} className="lw-chart" />
     </div>
   );
 }
@@ -73,16 +127,13 @@ function updateLastPoint(points: ChartPoint[], price: number) {
   if (!points.length || !price) return points;
   const next = [...points];
   const last = next[next.length - 1];
+
   next[next.length - 1] = {
     ...last,
     close: price,
     high: Math.max(last.high, price),
     low: Math.min(last.low, price)
   };
-  return next;
-}
 
-// 가격을 차트 영역의 세로 위치 퍼센트로 바꾼다.
-function toPercent(value: number, min: number, max: number) {
-  return ((max - value) / Math.max(max - min, 1)) * 100;
+  return next;
 }
