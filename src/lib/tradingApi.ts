@@ -1,8 +1,9 @@
 import { createMockChart, createMockDaily, createMockOrderBook, createMockQuote, masterSymbols } from "@/data/mockMarket";
+import { normalizeMasterCodes } from "@/lib/masterCode";
 import type { ChartPoint, DailyPrice, LoginUser, MarketSymbol, OrderBook, QuoteSnapshot, TrResult } from "@/types/trading";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_TR_API_URL ?? "";
-const MASTER_CODE_URL = process.env.NEXT_PUBLIC_MASTER_CODE_URL ?? "";
+const MASTER_CODE_URL = process.env.NEXT_PUBLIC_MASTER_CODE_URL ?? "/api/master-code";
 
 // API 서버 응답이 없을 때도 화면을 살리기 위한 공통 TR 래퍼다.
 async function requestTr<T>(path: string, param: Record<string, string>, fallback: T): Promise<TrResult<T>> {
@@ -40,12 +41,11 @@ export async function loginByDemoId(id: string): Promise<LoginUser> {
 
 // 외부 MasterCode 링크가 있으면 먼저 사용하고, 실패 시 기본 목록을 쓴다.
 export async function loadMasterCodes(): Promise<MarketSymbol[]> {
-  if (!MASTER_CODE_URL) return masterSymbols;
-
   try {
     const response = await fetch(MASTER_CODE_URL, { cache: "no-store" });
     if (!response.ok) return masterSymbols;
-    return (await response.json()) as MarketSymbol[];
+    const data = normalizeMasterCodes(await response.json());
+    return data.length > 0 ? data : masterSymbols;
   } catch {
     return masterSymbols;
   }

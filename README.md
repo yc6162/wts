@@ -14,7 +14,8 @@ npm run dev
 ```env
 NEXT_PUBLIC_TR_API_URL=https://api.example.com
 NEXT_PUBLIC_RTS_URL=wss://rts.example.com
-NEXT_PUBLIC_MASTER_CODE_URL=https://example.com/master-code.json
+NEXT_PUBLIC_MASTER_CODE_URL=/api/master-code
 ```
 
+MasterCode는 기본값으로 미래에셋 `https://your-master-code.example.com/wtscode.wjson`을 서버 라우트에서 받아옵니다.
 TR 서버나 RTS 서버가 연결되지 않아도 mock fallback으로 화면과 실시간 흐름을 확인할 수 있습니다.
