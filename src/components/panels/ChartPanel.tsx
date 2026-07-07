@@ -94,8 +94,10 @@ export function ChartPanel() {
   useEffect(() => {
     if (!points.length || !candleSeriesRef.current || !volumeSeriesRef.current) return;
 
+    const sortedPoints = [...points].sort((a, b) => a.time - b.time);
+
     candleSeriesRef.current.setData(
-      points.map((point) => ({
+      sortedPoints.map((point) => ({
         time: point.time as Time,
         open: point.open,
         high: point.high,
@@ -104,7 +106,7 @@ export function ChartPanel() {
       }))
     );
     volumeSeriesRef.current.setData(
-      points.map((point) => ({
+      sortedPoints.map((point) => ({
         time: point.time as Time,
         value: point.volume,
         color: point.close >= point.open ? "rgba(240,90,90,0.45)" : "rgba(78,157,247,0.45)"
@@ -113,11 +115,10 @@ export function ChartPanel() {
     chartRef.current?.timeScale().fitContent();
   }, [points]);
 
-  if (!points.length) return <div className="empty-state">수신된 차트 데이터가 없습니다.</div>;
-
   return (
     <div className="chart-panel">
       <div ref={containerRef} className="lw-chart" />
+      {!points.length && <div className="chart-empty">수신된 차트 데이터가 없습니다.</div>}
     </div>
   );
 }
