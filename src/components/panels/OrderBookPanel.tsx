@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchOrderBook } from "@/lib/tradingApi";
 import { realtimeClient } from "@/lib/realtime";
-import { formatNumber } from "@/lib/format";
+import { formatNumber, getChangeClass } from "@/lib/format";
 import { useAuthStore } from "@/store/auth-store";
 import { useMarketStore } from "@/store/market-store";
 import type { OrderBook } from "@/types/trading";
@@ -48,14 +48,14 @@ export function OrderBookPanel() {
       {book.asks.map((ask) => (
         <div className="order-row ask" key={`ask-${ask.price}`}>
           <span>{formatNumber(ask.quantity)}</span>
-          <strong>{formatNumber(ask.price)}</strong>
+          <strong className={getChangeClass(ask.changeSign ?? 0)}>{formatNumber(ask.price)}</strong>
           <span />
         </div>
       ))}
       {book.bids.map((bid) => (
         <div className="order-row bid" key={`bid-${bid.price}`}>
           <span />
-          <strong>{formatNumber(bid.price)}</strong>
+          <strong className={getChangeClass(bid.changeSign ?? 0)}>{formatNumber(bid.price)}</strong>
           <span>{formatNumber(bid.quantity)}</span>
         </div>
       ))}

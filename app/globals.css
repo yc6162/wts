@@ -373,11 +373,11 @@ th {
   text-align: center;
 }
 
-.order-row.ask strong {
+.order-row.ask strong:not(.is-up):not(.is-down):not(.is-flat) {
   color: var(--up);
 }
 
-.order-row.bid strong {
+.order-row.bid strong:not(.is-up):not(.is-down):not(.is-flat) {
   color: var(--down);
 }
 

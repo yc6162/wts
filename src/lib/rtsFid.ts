@@ -67,10 +67,10 @@ function readFieldBag(raw: FieldBag): FieldBag {
 
 // 현재가 관련 FID를 QuoteSnapshot 부분 데이터로 변환한다.
 function mapQuote(fields: FieldBag, code: string): Partial<QuoteSnapshot> {
-  const price = readNumber(fields, QUOTE_FIDS.price);
-  const change = readNumber(fields, QUOTE_FIDS.change);
+  const price = readSignedNumber(fields, QUOTE_FIDS.price);
+  const change = readDirectionalNumber(fields, QUOTE_FIDS.change);
   const volume = readNumber(fields, QUOTE_FIDS.volume);
-  const changeRate = readNumber(fields, QUOTE_FIDS.changeRate);
+  const changeRate = readDirectionalNumber(fields, QUOTE_FIDS.changeRate);
   const open = readNumber(fields, QUOTE_FIDS.open);
   const high = readNumber(fields, QUOTE_FIDS.high);
   const low = readNumber(fields, QUOTE_FIDS.low);
@@ -78,8 +78,8 @@ function mapQuote(fields: FieldBag, code: string): Partial<QuoteSnapshot> {
 
   return {
     code,
-    ...(price !== null ? { price } : {}),
-    ...(change !== null ? { change } : {}),
+    ...(price !== null ? { price: price.value } : {}),
+    ...(change !== null ? { change } : price?.sign ? { change: price.sign } : {}),
     ...(volume !== null ? { volume } : {}),
     ...(changeRate !== null ? { changeRate } : {}),
     ...(open !== null ? { open } : {}),
@@ -91,15 +91,25 @@ function mapQuote(fields: FieldBag, code: string): Partial<QuoteSnapshot> {
 
 // 호가 관련 FID가 충분히 있을 때 OrderBook으로 변환한다.
 function mapOrderBook(fields: FieldBag): OrderBook | null {
-  const asks = ASK_PRICE_FIDS.map((priceFid, index) => ({
-    price: readNumber(fields, priceFid) ?? 0,
-    quantity: readNumber(fields, ASK_QUANTITY_FIDS[index]) ?? 0
-  })).filter((item) => item.price > 0 || item.quantity > 0);
+  const asks = ASK_PRICE_FIDS.map((priceFid, index) => {
+    const price = readSignedNumber(fields, priceFid);
 
-  const bids = BID_PRICE_FIDS.map((priceFid, index) => ({
-    price: readNumber(fields, priceFid) ?? 0,
-    quantity: readNumber(fields, BID_QUANTITY_FIDS[index]) ?? 0
-  })).filter((item) => item.price > 0 || item.quantity > 0);
+    return {
+      price: price?.value ?? 0,
+      quantity: readNumber(fields, ASK_QUANTITY_FIDS[index]) ?? 0,
+      changeSign: price?.sign ?? 0
+    };
+  }).filter((item) => item.price > 0 || item.quantity > 0);
+
+  const bids = BID_PRICE_FIDS.map((priceFid, index) => {
+    const price = readSignedNumber(fields, priceFid);
+
+    return {
+      price: price?.value ?? 0,
+      quantity: readNumber(fields, BID_QUANTITY_FIDS[index]) ?? 0,
+      changeSign: price?.sign ?? 0
+    };
+  }).filter((item) => item.price > 0 || item.quantity > 0);
 
   if (asks.length === 0 && bids.length === 0) return null;
   return { asks, bids };
@@ -107,11 +117,27 @@ function mapOrderBook(fields: FieldBag): OrderBook | null {
 
 // 3자리 RTS FID와 6자리 TR FID를 모두 검색해서 숫자로 바꾼다.
 function readNumber(fields: FieldBag, fid: string) {
+  return readSignedNumber(fields, fid)?.value ?? null;
+}
+
+// 숫자 앞의 +/-는 표시값이 아니라 등락 색상 방향으로 분리한다.
+function readSignedNumber(fields: FieldBag, fid: string) {
   const value = readField(fields, fid);
   if (value === undefined || value === null || value === "") return null;
 
-  const numberValue = Number(String(value).replace(/,/g, ""));
-  return Number.isFinite(numberValue) ? numberValue : null;
+  const text = String(value).trim();
+  const sign = text.startsWith("+") ? 1 : text.startsWith("-") ? -1 : 0;
+  const numberValue = Number(text.replace(/[,+-]/g, ""));
+
+  if (!Number.isFinite(numberValue)) return null;
+  return { value: numberValue, sign };
+}
+
+// 등락/등락률은 색상 판단을 위해 방향성을 숫자 부호로 유지한다.
+function readDirectionalNumber(fields: FieldBag, fid: string) {
+  const parsed = readSignedNumber(fields, fid);
+  if (!parsed) return null;
+  return parsed.sign < 0 ? -parsed.value : parsed.value;
 }
 
 // 3자리 RTS FID와 6자리 TR FID를 모두 검색해서 문자열로 바꾼다.

@@ -46,6 +46,7 @@ export type DailyPrice = {
 export type OrderBookLevel = {
   price: number;
   quantity: number;
+  changeSign?: number;
 };
 
 export type OrderBook = {
