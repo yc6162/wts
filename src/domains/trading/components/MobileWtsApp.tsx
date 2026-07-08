@@ -13,6 +13,7 @@ import { SymbolSearch } from "@/domains/market/components/SymbolSearch";
 import { TabBar } from "@/domains/trading/components/TabBar";
 
 // 앱에 필요한 공통 Provider를 한 곳에서 조립한다.
+// Provider 순서가 중요하다. RealtimeShell은 로그인 정보와 시장 상태를 모두 사용한다.
 export function MobileWtsApp() {
   return (
     <QueryProvider>
@@ -25,7 +26,8 @@ export function MobileWtsApp() {
   );
 }
 
-// 실시간 연결은 화면보다 상위에서 한 번 열고, 탭별 구독만 하위에서 관리한다.
+// 실시간 연결은 탭 화면보다 상위에서 한 번만 열고, 탭별 구독만 하위에서 관리한다.
+// 사용자가 로그인 ID를 바꾸면 기존 연결을 닫고 새 ID로 다시 연결한다.
 function RealtimeShell() {
   const { user } = useAuthStore();
   const { activeTab } = useMarketStore();

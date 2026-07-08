@@ -7,7 +7,7 @@ import { useChartQuery } from "@/hooks/useWtsQueries";
 import { useMarketStore } from "@/store/market-store";
 import type { ChartPoint, QuoteSnapshot } from "@/types/trading";
 
-// 차트 탭은 TR 캔들 데이터를 그리고 quote 실시간으로 마지막 봉을 갱신한다.
+// 차트 탭은 TR 캔들 데이터로 차트를 그리고 quote 실시간으로 마지막 봉을 갱신한다.
 export function ChartPanel() {
   const { activeCode } = useMarketStore();
   const chartQuery = useChartQuery(activeCode);
@@ -27,6 +27,8 @@ export function ChartPanel() {
     realtimeClient.subscribe(key, activeCode, (message) => {
       if (message.type !== "quote" || message.code !== activeCode) return;
       const quote = message.payload as Partial<QuoteSnapshot>;
+
+      // 실시간 quote는 캔들 전체를 주지 않으므로 마지막 봉의 종가/고가/저가만 보정한다.
       setPoints((prev) => updateLastPoint(prev, quote.price ?? 0));
     });
 
@@ -73,6 +75,7 @@ export function ChartPanel() {
     candleSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
 
+    // 차트 라이브러리는 컨테이너 너비 변화를 자동으로 알지 못해서 ResizeObserver로 직접 맞춘다.
     const observer = new ResizeObserver(() => {
       if (!containerRef.current) return;
       chart.applyOptions({ width: containerRef.current.clientWidth });

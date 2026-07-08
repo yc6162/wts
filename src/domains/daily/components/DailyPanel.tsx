@@ -23,6 +23,8 @@ export function DailyPanel() {
     realtimeClient.subscribe(key, activeCode, (message) => {
       if (message.type !== "quote" || message.code !== activeCode) return;
       const quote = message.payload as Partial<QuoteSnapshot>;
+
+      // 일자별 전체 목록을 흔들지 않고 첫 행만 갱신해서 표의 정렬과 행 개수를 유지한다.
       setRows((prev) => updateLatestDailyRow(prev, quote));
     });
 

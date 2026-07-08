@@ -50,7 +50,7 @@ const orderBookSymbols = [
   "004065"
 ];
 
-// 앱 시작 시 한 번만 연결되고, 화면별 구독만 바꾸는 RTS 클라이언트다.
+// 앱 시작 뒤 한 번만 연결하고, 화면별 구독만 바꾸는 RTS 클라이언트다.
 class RealtimeClient {
   private socket: Socket | null = null;
   private handlers = new Map<string, RealtimeHandler>();
@@ -61,7 +61,7 @@ class RealtimeClient {
   private loginId = "";
   private lastUploadedSid = "";
 
-  // 공통 RTS 연결을 시작한다. env는 https URL 그대로 사용한다.
+  // 공통 RTS 연결을 시작한다. env의 https URL을 그대로 사용한다.
   connect(loginId = "") {
     const url = process.env.NEXT_PUBLIC_RTS_URL;
     this.loginId = loginId;
@@ -87,7 +87,7 @@ class RealtimeClient {
     this.bindSocketEvents();
   }
 
-  // 화면이 사라질 때 공통 연결을 정리한다.
+  // 화면이 사라지면 공통 연결을 정리한다.
   disconnect() {
     console.log("[WTS][RTS] disconnect");
     this.socket?.disconnect();

@@ -28,6 +28,7 @@ export function readRtsCode(raw: FieldBag) {
   const nested = value && typeof value === "object" && !Array.isArray(value) ? (value as FieldBag) : {};
   const code = String(raw.code ?? nested.code ?? raw["001301"] ?? nested["001301"] ?? raw["301"] ?? nested["301"] ?? "");
 
+  // 일부 RTS 코드는 A005930처럼 시장 구분 prefix가 붙어서 들어온다.
   if (["A", "J", "Q"].includes(code[0]) && code.length < 8) {
     return code.slice(1);
   }
@@ -65,7 +66,7 @@ function readFieldBag(raw: FieldBag): FieldBag {
   return raw;
 }
 
-// 현재가 관련 FID를 QuoteSnapshot 부분 데이터로 변환한다.
+// 현재가 관련 FID를 QuoteSnapshot 일부 데이터로 변환한다.
 function mapQuote(fields: FieldBag, code: string): Partial<QuoteSnapshot> {
   const price = readSignedNumber(fields, QUOTE_FIDS.price);
   const change = readDirectionalNumber(fields, QUOTE_FIDS.change);
@@ -133,7 +134,7 @@ function readSignedNumber(fields: FieldBag, fid: string) {
   return { value: numberValue, sign };
 }
 
-// 등락/등락률은 색상 판단을 위해 방향성을 숫자 부호로 유지한다.
+// 등락/등락률처럼 색상 판단이 필요한 값은 방향성을 숫자 부호로 유지한다.
 function readDirectionalNumber(fields: FieldBag, fid: string) {
   const parsed = readSignedNumber(fields, fid);
   if (!parsed) return null;
@@ -146,7 +147,7 @@ function readString(fields: FieldBag, fid: string) {
   return value === undefined || value === null ? "" : String(value);
 }
 
-// 실시간은 3자리, TR은 6자리이므로 뒤 3자리가 같은 값을 같이 본다.
+// 실시간은 3자리, TR은 6자리이므로 끝 3자리가 같은 값을 같이 본다.
 function readField(fields: FieldBag, fid: string) {
   const shortFid = toRtsFid(fid);
   const trFid = fid.length === 6 ? fid : `002${shortFid}`;

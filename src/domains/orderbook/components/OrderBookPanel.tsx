@@ -7,7 +7,7 @@ import { formatNumber, getChangeClass } from "@/lib/format";
 import { useMarketStore } from "@/store/market-store";
 import type { OrderBook } from "@/types/trading";
 
-// 호가 탭은 TR 호가판 위에 orderbook 실시간 패킷을 덮어쓴다.
+// 호가 탭은 TR 호가 스냅샷 위에 orderbook 실시간 패킷을 덮어쓴다.
 export function OrderBookPanel() {
   const { activeCode } = useMarketStore();
   const orderBookQuery = useOrderBookQuery(activeCode);
@@ -22,6 +22,8 @@ export function OrderBookPanel() {
 
     realtimeClient.subscribe(key, activeCode, (message) => {
       if (message.type !== "orderbook" || message.code !== activeCode) return;
+
+      // 매도/매수 중 한쪽만 수신될 수 있어서 이전 값을 fallback으로 남긴다.
       setBook((prev) => ({
         asks: (message.payload as Partial<OrderBook>).asks ?? prev?.asks ?? [],
         bids: (message.payload as Partial<OrderBook>).bids ?? prev?.bids ?? []
@@ -38,9 +40,9 @@ export function OrderBookPanel() {
   return (
     <div className="orderbook-panel">
       <div className="orderbook-head">
-        <span>매도잔량</span>
+        <span>매도수량</span>
         <span>가격</span>
-        <span>매수잔량</span>
+        <span>매수수량</span>
       </div>
       {book.asks.map((ask) => (
         <div className="order-row ask" key={`ask-${ask.price}`}>

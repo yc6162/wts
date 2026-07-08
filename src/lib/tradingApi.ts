@@ -27,6 +27,7 @@ async function requestTr<T>(
       return { ok: false, data: null, error: String(data.message ?? "TR result failed") };
     }
 
+    // TR마다 종목코드 파라미터명이 달라서 001301과 code를 둘 다 확인한다.
     return { ok: true, data: mapper(data, param["001301"] ?? param.code ?? "") };
   } catch (error) {
     return { ok: false, data: null, error: error instanceof Error ? error.message : "TR error" };
@@ -37,7 +38,7 @@ async function requestTr<T>(
 export async function loginByDemoId(id: string): Promise<LoginUser> {
   return {
     id,
-    name: "홍길동",
+    name: "데모사용자",
     accountNo: "123-45-678901",
     token: `demo-token-${id}`
   };
@@ -179,7 +180,7 @@ function mapChartTr(data: Record<string, unknown>): ChartPoint[] {
   })).filter((item) => item.time && item.close > 0);
 }
 
-// 숫자 앞의 +/-는 표시값이 아니라 색상 방향으로 분리한다.
+// 숫자 앞의 +/-는 표시값이 아니라 등락 방향으로 분리한다.
 function readSignedNumber(data: Record<string, unknown>, key: string) {
   const raw = readText(data, key);
   if (!raw) return null;
@@ -191,19 +192,19 @@ function readSignedNumber(data: Record<string, unknown>, key: string) {
   return { value, sign };
 }
 
-// 등락/등락률은 색상 판단을 위해 부호를 유지한다.
+// 등락/등락률처럼 색상 판단이 필요한 값은 방향성을 숫자 부호로 유지한다.
 function readDirectionalNumber(data: Record<string, unknown>, key: string) {
   const parsed = readSignedNumber(data, key);
   if (!parsed) return null;
   return parsed.sign < 0 ? -parsed.value : parsed.value;
 }
 
-// 문자열 숫자를 부호 제거 숫자로 변환한다.
+// 문자와 숫자 부호를 제거하고 숫자로 변환한다.
 function readNumber(data: Record<string, unknown>, key: string) {
   return readSignedNumber(data, key)?.value ?? null;
 }
 
-// TR 값의 탭/개행을 제거한다.
+// TR 값의 앞뒤 공백을 제거한다.
 function readText(data: Record<string, unknown>, key: string) {
   return String(data[key] ?? "").trim();
 }
@@ -220,7 +221,7 @@ function formatDate(value: string) {
   return `${value.slice(0, 4)}.${value.slice(4, 6)}.${value.slice(6, 8)}`;
 }
 
-// 차트 라이브러리가 쓸 수 있는 시간 키를 만든다.
+// 차트 라이브러리가 요구하는 초 단위 timestamp를 만든다.
 function toChartTime(date: string, time: string) {
   const cleanDate = date.replace(/\s/g, "");
   const cleanTime = time.padStart(6, "0");

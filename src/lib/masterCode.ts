@@ -10,6 +10,7 @@ type RawMasterCode = {
 };
 
 // 미래에셋 MasterCode 원본에서 실제 종목 배열을 찾아낸다.
+// 응답 구조가 배열이거나 객체 안 배열이거나 할 수 있어 모든 1단계 배열을 후보로 본다.
 function extractMasterCodeRows(payload: unknown): RawMasterCode[] {
   if (Array.isArray(payload)) return payload as RawMasterCode[];
 
@@ -20,7 +21,7 @@ function extractMasterCodeRows(payload: unknown): RawMasterCode[] {
   return [];
 }
 
-// 외부 MasterCode 필드를 앱에서 쓰는 공통 종목 형태로 변환한다.
+// 여러 MasterCode 필드를 앱에서 쓰는 공통 종목 형태로 변환한다.
 export function normalizeMasterCodes(payload: unknown): MarketSymbol[] {
   const uniqueSymbols = new Map<string, MarketSymbol>();
 
@@ -32,6 +33,7 @@ export function normalizeMasterCodes(payload: unknown): MarketSymbol[] {
     }))
     .filter((item) => item.code.length > 0 && item.name.length > 0)
     .forEach((item) => {
+      // 같은 종목코드가 여러 시장 목록에서 중복될 수 있어 첫 번째 값만 남긴다.
       if (!uniqueSymbols.has(item.code)) {
         uniqueSymbols.set(item.code, item);
       }

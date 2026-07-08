@@ -14,7 +14,8 @@ export function SymbolSearch() {
     return symbols.filter((item) => `${item.code} ${item.name}`.toLowerCase().includes(text)).slice(0, 5);
   }, [keyword, symbols]);
 
-  // 입력값과 가장 가까운 종목을 찾고, 없으면 숫자 코드를 그대로 적용한다.
+  // 입력값과 가장 가까운 종목을 찾고, 없으면 숫자 코드만 직접 적용한다.
+  // MasterCode가 늦게 로딩되어도 사용자가 종목코드를 바로 입력할 수 있게 하기 위한 처리다.
   function submitSymbol() {
     const text = keyword.trim();
     if (!text) return;
@@ -36,7 +37,7 @@ export function SymbolSearch() {
   return (
     <section className="symbol-box">
       <div className="symbol-title">
-        <span>{selectedSymbol?.market ?? "미지정"}</span>
+        <span>{selectedSymbol?.market ?? "미분류"}</span>
         <strong>{selectedSymbol?.name ?? "종목명 없음"}</strong>
         <em>{activeCode}</em>
       </div>

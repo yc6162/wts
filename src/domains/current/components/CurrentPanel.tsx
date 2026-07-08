@@ -8,7 +8,7 @@ import { useMarketStore } from "@/store/market-store";
 import { StatTile } from "@/components/StatTile";
 import type { QuoteSnapshot } from "@/types/trading";
 
-// 현재가 탭은 TR 스냅샷 위에 quote 실시간 값을 덮어쓴다.
+// 현재가 탭은 TR로 받은 스냅샷 위에 quote 실시간 값을 덮어쓴다.
 export function CurrentPanel() {
   const { activeCode } = useMarketStore();
   const quoteQuery = useQuoteQuery(activeCode);
@@ -23,6 +23,8 @@ export function CurrentPanel() {
 
     realtimeClient.subscribe(key, activeCode, (message) => {
       if (message.type !== "quote" || message.code !== activeCode) return;
+
+      // 실시간 패킷에는 일부 FID만 올 수 있으므로 기존 snapshot에 부분 병합한다.
       setQuote((prev) => ({ ...(prev ?? {}), ...(message.payload as Partial<QuoteSnapshot>) }));
     });
 

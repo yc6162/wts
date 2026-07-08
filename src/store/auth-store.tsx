@@ -12,11 +12,12 @@ type AuthStore = {
 
 const AuthContext = createContext<AuthStore | null>(null);
 
-// 로그인 정보와 TR 공통 파라미터를 앱 전체에서 쓰기 위한 Provider다.
+// 로그인 정보는 TR/RTS 공통 파라미터로 쓰이므로 앱 상단 Provider에서 관리한다.
+// 지금은 데모 사용자로 시작하고, 실제 로그인 API가 붙으면 loginByDemoId만 교체하면 된다.
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<LoginUser | null>({
     id: "demo",
-    name: "홍길동",
+    name: "데모사용자",
     accountNo: "123-45-678901",
     token: "demo-token"
   });
@@ -38,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// 컴포넌트에서 로그인 스토어를 꺼내 쓰는 훅이다.
+// 컴포넌트에서 로그인 store를 꺼내 쓰는 진입점이다.
 export function useAuthStore() {
   const store = useContext(AuthContext);
   if (!store) throw new Error("useAuthStore must be used inside AuthProvider");

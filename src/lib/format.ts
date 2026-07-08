@@ -1,4 +1,5 @@
 // 숫자를 한국 주식 화면에 맞는 천 단위 표기로 바꾼다.
+// 등락 방향은 CSS class로 표현하므로 화면에 찍는 숫자는 절댓값만 사용한다.
 export function formatNumber(value: number) {
   return new Intl.NumberFormat("ko-KR").format(Math.abs(value));
 }

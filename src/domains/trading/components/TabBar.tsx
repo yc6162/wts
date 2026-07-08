@@ -10,7 +10,7 @@ const tabs: Array<{ key: WtsTab; label: string }> = [
   { key: "orderbook", label: "호가" }
 ];
 
-// 탭 변경 시 기존 탭 컴포넌트가 unmount되며 실시간 구독 cleanup이 실행된다.
+// 탭 변경 시 기존 탭 컴포넌트가 unmount되면서 실시간 구독 cleanup이 실행된다.
 export function TabBar() {
   const { activeTab, setActiveTab } = useMarketStore();
 
